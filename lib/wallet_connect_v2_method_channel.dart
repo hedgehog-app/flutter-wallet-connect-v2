@@ -5,12 +5,15 @@ import 'package:flutter/services.dart';
 
 import 'src/model/app_metadata.dart';
 import 'src/model/connection_status.dart';
+import 'src/model/proposal_namespace.dart';
 import 'src/model/session.dart';
 import 'src/model/session_approval.dart';
 import 'src/model/session_delete.dart';
 import 'src/model/session_proposal.dart';
 import 'src/model/session_request.dart';
+import 'src/model/session_response.dart';
 import 'src/model/session_update.dart';
+import 'src/model/walletconnect_uri.dart';
 import 'wallet_connect_v2_platform_interface.dart';
 
 /// An implementation of [WalletConnectV2Platform] that uses method channels.
@@ -46,6 +49,15 @@ class MethodChannelWalletConnectV2 extends WalletConnectV2Platform {
   }
 
   @override
+  Future<WalletConnectUri?> initPairing() async {
+    final rawUri = await methodChannel.invokeMethod('initPairing');
+    print("raw URI = ${rawUri}");
+    final Map<String, dynamic> uri = jsonDecode(jsonEncode(rawUri));
+    print("decoded URI = ${uri}");
+    return WalletConnectUri.fromJson(uri);
+  }
+
+  @override
   Future<void> approve({required SessionApproval approval}) {
     return methodChannel.invokeMethod('approve', approval.toJson());
   }
@@ -64,13 +76,28 @@ class MethodChannelWalletConnectV2 extends WalletConnectV2Platform {
   }
 
   @override
-  Future<void> disconnectSession({required String topic}) {
+  Future<void> connectSession(
+      {required String topic,
+      required Map<String, ProposalNamespace> requiredNamespaces}) {
+    return methodChannel.invokeMethod('connectSession',
+        {'topic': topic, requiredNamespaces: jsonEncode(requiredNamespaces)});
+  }
+
+  @override
+  Future<void> disconnectSession({
+    required String topic,
+  }) {
     return methodChannel.invokeMethod('disconnectSession', {'topic': topic});
   }
 
   @override
   Future<void> updateSession({required SessionApproval updateApproval}) {
     return methodChannel.invokeMethod('updateSession', updateApproval.toJson());
+  }
+
+  @override
+  Future<void> sendRequest({required SessionRequest request}) {
+    return methodChannel.invokeMethod('sendRequest', request.toJson());
   }
 
   @override
@@ -106,6 +133,8 @@ class MethodChannelWalletConnectV2 extends WalletConnectV2Platform {
           return Session.fromJson(eventData);
         case "session_request":
           return SessionRequest.fromJson(eventData);
+        case "session_response":
+          return SessionResponse.fromJson(eventData);
         case "session_update":
           return SessionUpdate.fromJson(eventData);
         case "session_delete":

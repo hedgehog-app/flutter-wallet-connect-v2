@@ -27,17 +27,17 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                 let appMetadata = arguments["appMetadata"] as! [String: Any]
                 let metadata: AppMetadata = try! JSONDecoder().decode(AppMetadata.self, from: JSONSerialization.data(withJSONObject: appMetadata))
                 
-                Networking.configure(projectId: projectId, socketFactory: SocketFactory(), socketConnectionType: .manual)
+                Networking.configure(projectId: projectId, socketFactory: SocketFactory())
             
                 Pair.configure(metadata: metadata)
                 
                 Sign.instance.socketConnectionStatusPublisher
-                            .receive(on: DispatchQueue.main)
-                            .sink { [weak self] status in
-                                self?.onEvent(name: "connection_status", data: [
-                                    "isConnected": status == .connected
-                                ])
-                            }.store(in: &publishers)
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] status in
+                        self?.onEvent(name: "connection_status", data: [
+                            "isConnected": status == .connected
+                        ])
+                    }.store(in: &publishers)
                 
                 Sign.instance.sessionProposalPublisher
                     .receive(on: DispatchQueue.main)
@@ -51,24 +51,24 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                     }.store(in: &publishers)
                 
                 Sign.instance.sessionSettlePublisher
-                            .receive(on: DispatchQueue.main)
-                            .sink { [weak self] session in
-                                self?.onEvent(name: "session_settle", data: [
-                                    "topic": session.topic,
-                                    "peer": session.peer.toFlutterValue(),
-                                    "expiration": session.expiryDate.toUtcIsoDateString(),
-                                    "namespaces": session.namespaces.mapValues { value in value.toFlutterValue()
-                                    }
-                                ])
-                            }.store(in: &publishers)
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] session in
+                        self?.onEvent(name: "session_settle", data: [
+                            "topic": session.topic,
+                            "peer": session.peer.toFlutterValue(),
+                            "expiration": session.expiryDate.toUtcIsoDateString(),
+                            "namespaces": session.namespaces.mapValues { value in value.toFlutterValue()
+                            }
+                        ])
+                    }.store(in: &publishers)
             
                 Sign.instance.sessionDeletePublisher
-                        .receive(on: DispatchQueue.main)
-                        .sink { [weak self] session in
-                            self?.onEvent(name: "session_delete", data: [
-                                "topic": session.0
-                            ])
-                        }.store(in: &publishers)
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] session in
+                        self?.onEvent(name: "session_delete", data: [
+                            "topic": session.0
+                        ])
+                    }.store(in: &publishers)
             
                 Sign.instance.sessionUpdatePublisher
                     .receive(on: DispatchQueue.main)
@@ -79,10 +79,16 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                     }.store(in: &publishers)
             
                 Sign.instance.sessionRequestPublisher
-                        .receive(on: DispatchQueue.main)
-                        .sink { [weak self] request in
-                            self?.onEvent(name: "session_request", data: request.toFlutterValue())
-                        }.store(in: &publishers)
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] request in
+                        self?.onEvent(name: "session_request", data: request.toFlutterValue())
+                    }.store(in: &publishers)
+
+                Sign.instance.sessionResponsePublisher
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] response in
+                        self?.onEvent(name: "session_response", data: response.toFlutterValue())
+                    }.store(in: &publishers)
 
             result(nil)
         }
@@ -115,6 +121,20 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                     try await Pair.instance.pair(uri: wcUri!)
                 } catch let error {
                     onError(code: "pair_error", errorMessage: error.localizedDescription)
+                }
+                result(nil)
+            }
+        }
+        case "initPairing": do {
+            Task {
+                do {
+                    let uri = try await Pair.instance.create();
+                    result([
+                        "fullUri": uri.absoluteString,
+                        "topic": uri.topic,
+                    ])
+                } catch let error {
+                    onError(code: "initPairing_error", errorMessage: error.localizedDescription)
                 }
                 result(nil)
             }
@@ -156,6 +176,22 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                 "namespaces": value.namespaces.mapValues { value in value.toFlutterValue()
                 },
             ] })
+        }
+        case "connectSession": do {
+            Task {
+                do {
+                    let arguments = call.arguments as! [String: Any]
+                    let topic = arguments["topic"] as! String
+                    let namespacesJson = arguments["requiredNamespaces"] as! [String: Any]
+                    let namespaces: [String: ProposalNamespace] = try! JSONDecoder().decode([String: ProposalNamespace].self, from: JSONSerialization.data(withJSONObject: namespacesJson))
+                    try await Sign.instance.connect(
+                        requiredNamespaces: namespaces,
+                        topic: topic)
+                } catch let error {
+                    onError(code: "connect_session_error", errorMessage: error.localizedDescription)
+                }
+                result(nil)
+            }
         }
         case "disconnectSession": do {
             Task {
@@ -315,6 +351,17 @@ extension Request {
             "chainId": String(self.chainId),
             "method": self.method,
             "params": try! self.params.json()
+        ];
+    }
+}
+
+extension Response {
+    func toFlutterValue() -> NSDictionary {
+        return [
+            "id": try! self.id.json(),
+            "topic": self.topic,
+            "chainId": self.chainId,
+            "result": self.result,
         ];
     }
 }

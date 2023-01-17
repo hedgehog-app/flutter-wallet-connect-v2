@@ -1,8 +1,11 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'src/model/app_metadata.dart';
+import 'src/model/proposal_namespace.dart';
 import 'src/model/session.dart';
 import 'src/model/session_approval.dart';
+import 'src/model/session_request.dart';
+import 'src/model/walletconnect_uri.dart';
 import 'wallet_connect_v2_method_channel.dart';
 
 abstract class WalletConnectV2Platform extends PlatformInterface {
@@ -47,6 +50,10 @@ abstract class WalletConnectV2Platform extends PlatformInterface {
     throw UnimplementedError('pair() has not been implemented.');
   }
 
+  Future<WalletConnectUri?> initPairing() {
+    throw UnimplementedError('initPairing() has not been implemented.');
+  }
+
   Future<void> approve({required SessionApproval approval}) {
     throw UnimplementedError('approve() has not been implemented.');
   }
@@ -60,6 +67,10 @@ abstract class WalletConnectV2Platform extends PlatformInterface {
         'getActivatedSessions() has not been implemented.');
   }
 
+  Future<void> sendRequest({required SessionRequest request}) {
+    throw UnimplementedError('sendRequest() has not been implemented.');
+  }
+
   Future<void> rejectRequest(
       {required String topic, required String requestId}) {
     throw UnimplementedError('rejectRequest() has not been implemented.');
@@ -70,6 +81,12 @@ abstract class WalletConnectV2Platform extends PlatformInterface {
       required String requestId,
       required String result}) {
     throw UnimplementedError('approveRequest() has not been implemented.');
+  }
+
+  Future<void> connectSession(
+      {required String topic,
+      required Map<String, ProposalNamespace> requiredNamespaces}) {
+    throw UnimplementedError('connectSession() has not been implemented.');
   }
 
   Future<void> disconnectSession({required String topic}) {

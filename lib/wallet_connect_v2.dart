@@ -4,20 +4,26 @@ import 'package:flutter/services.dart';
 
 import 'src/model/app_metadata.dart';
 import 'src/model/connection_status.dart';
+import 'src/model/proposal_namespace.dart';
 import 'src/model/session.dart';
 import 'src/model/session_approval.dart';
 import 'src/model/session_delete.dart';
 import 'src/model/session_proposal.dart';
 import 'src/model/session_request.dart';
+import 'src/model/session_response.dart';
 import 'src/model/session_update.dart';
+import 'src/model/walletconnect_uri.dart';
 import 'wallet_connect_v2_platform_interface.dart';
 
 export 'src/model/app_metadata.dart';
+export 'src/model/proposal_namespace.dart';
 export 'src/model/session.dart';
 export 'src/model/session_approval.dart';
 export 'src/model/session_namespace.dart';
 export 'src/model/session_proposal.dart';
 export 'src/model/session_request.dart';
+export 'src/model/session_response.dart';
+export 'src/model/walletconnect_uri.dart';
 
 class WalletConnectV2 {
   StreamSubscription? _eventSubscription;
@@ -28,6 +34,7 @@ class WalletConnectV2 {
   OnSessionUpdate? onSessionUpdate;
   OnSessionDelete? onSessionDelete;
   OnSessionRequest? onSessionRequest;
+  OnSessionResponse? onSessionResponse;
   OnEventError? onEventError;
 
   Future<void> init(
@@ -42,6 +49,8 @@ class WalletConnectV2 {
         onSessionSettle?.call(event);
       } else if (event is SessionRequest) {
         onSessionRequest?.call(event);
+      } else if (event is SessionResponse) {
+        onSessionResponse?.call(event);
       } else if (event is SessionUpdate) {
         onSessionUpdate?.call(event.topic);
       } else if (event is SessionDelete) {
@@ -70,6 +79,10 @@ class WalletConnectV2 {
     return WalletConnectV2Platform.instance.pair(uri: uri);
   }
 
+  Future<WalletConnectUri?> initPairing() {
+    return WalletConnectV2Platform.instance.initPairing();
+  }
+
   Future<void> approveSession({required SessionApproval approval}) {
     return WalletConnectV2Platform.instance.approve(approval: approval);
   }
@@ -80,6 +93,13 @@ class WalletConnectV2 {
 
   Future<List<Session>> getActivatedSessions() {
     return WalletConnectV2Platform.instance.getActivatedSessions();
+  }
+
+  Future<void> connectSession(
+      {required String topic,
+      required Map<String, ProposalNamespace> requiredNamespaces}) {
+    return WalletConnectV2Platform.instance
+        .connectSession(topic: topic, requiredNamespaces: requiredNamespaces);
   }
 
   Future<void> disconnectSession({required String topic}) {
@@ -117,4 +137,5 @@ typedef OnSessionSettle = Function(Session session);
 typedef OnSessionUpdate = Function(String topic);
 typedef OnSessionDelete = Function(String topic);
 typedef OnSessionRequest = Function(SessionRequest request);
+typedef OnSessionResponse = Function(SessionResponse response);
 typedef OnEventError = Function(String code, String message);
