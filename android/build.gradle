@@ -6,6 +6,9 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        scijava {
+            url "https://maven.scijava.org/content/repositories/public/"
+        }
     }
 
     dependencies {
