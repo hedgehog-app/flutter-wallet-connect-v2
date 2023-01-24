@@ -208,12 +208,12 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                     
                     let namespacesData = arguments["requiredNamespaces"] as! [String: Any]
                     let tmp = try JSONSerialization.data(withJSONObject: namespacesData, options: .prettyPrinted)
-                    self.onEvent(name: "log", data: ["message": "namespaces = " + String(data: tmp, encoding: .utf8)!])
                     
                     let namespaces: [String: ProposalNamespace] = try JSONDecoder().decode([String: ProposalNamespace].self, from: JSONSerialization.data(withJSONObject: namespacesData))
                     self.onEvent(name: "log", data: ["message": "Sign.instance.connect"])
 
                     try await Sign.instance.connect(requiredNamespaces: namespaces, topic: topic)
+                    self.onEvent(name: "log", data: ["message": "Sign.instance.connect returned"])
                 } catch let error {
                     self.onEvent(name: "log", data: ["message": "Failed to connect: " + error.localizedDescription])
                     onError(code: "connect_session_error", errorMessage: error.localizedDescription)
