@@ -53,6 +53,7 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                 Sign.instance.sessionSettlePublisher
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] session in
+                        self?.onEvent(name: "log", data: ["message": "SESSION SETTLED"])
                         self?.onEvent(name: "session_settle", data: [
                             "topic": session.topic,
                             "peer": session.peer.toFlutterValue(),
@@ -62,6 +63,25 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                         ])
                     }.store(in: &publishers)
             
+                Sign.instance.sessionRejectionPublisher
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] (proposal, reason) in
+                        self?.onEvent(name: "log", data: ["message": "SESSION REJECTED: reason TBD"])
+                    }.store(in: &publishers)
+                
+
+                Sign.instance.sessionEventPublisher
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] (event, topic, chainId) in
+                        self?.onEvent(name: "log", data: ["message": "SESSION EVENT: TBD"])
+                    }.store(in: &publishers)
+
+                Sign.instance.sessionsPublisher
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] (sessions) in
+                        self?.onEvent(name: "log", data: ["message": "SESSIONS arary: TBD"])
+                    }.store(in: &publishers)
+
                 Sign.instance.sessionDeletePublisher
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] session in
@@ -180,14 +200,22 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
         case "connectSession": do {
             Task {
                 do {
+                    self.onEvent(name: "log", data: ["message": "connectSession"])
                     let arguments = call.arguments as! [String: Any]
+                    
                     let topic = arguments["topic"] as! String
-                    let namespacesJson = arguments["requiredNamespaces"] as! [String: Any]
-                    let namespaces: [String: ProposalNamespace] = try! JSONDecoder().decode([String: ProposalNamespace].self, from: JSONSerialization.data(withJSONObject: namespacesJson))
-                    try await Sign.instance.connect(
-                        requiredNamespaces: namespaces,
-                        topic: topic)
+                    self.onEvent(name: "log", data: ["message": "topic = " + topic])
+                    
+                    let namespacesData = arguments["requiredNamespaces"] as! [String: Any]
+                    let tmp = try JSONSerialization.data(withJSONObject: namespacesData, options: .prettyPrinted)
+                    self.onEvent(name: "log", data: ["message": "namespaces = " + String(data: tmp, encoding: .utf8)!])
+                    
+                    let namespaces: [String: ProposalNamespace] = try JSONDecoder().decode([String: ProposalNamespace].self, from: JSONSerialization.data(withJSONObject: namespacesData))
+                    self.onEvent(name: "log", data: ["message": "Sign.instance.connect"])
+
+                    try await Sign.instance.connect(requiredNamespaces: namespaces, topic: topic)
                 } catch let error {
+                    self.onEvent(name: "log", data: ["message": "Failed to connect: " + error.localizedDescription])
                     onError(code: "connect_session_error", errorMessage: error.localizedDescription)
                 }
                 result(nil)
@@ -217,6 +245,16 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
                     try await Sign.instance.update(topic: arguments["id"] as! String, namespaces: namespaces)
                 } catch let error {
                     onError(code: "update_session_error", errorMessage: error.localizedDescription)
+                }
+                result(nil)
+            }
+        }
+        case "sendRequest": do {
+            Task {
+                do {
+                    self.onEvent(name: "log", data: ["message": "SEND REQUEST NOT IMPLEMENTED YET"])
+                } catch let error {
+                    onError(code: "send_request_error", errorMessage: error.localizedDescription)
                 }
                 result(nil)
             }
@@ -317,7 +355,7 @@ extension ProposalNamespace.Extension {
         return [
             "chains": Array(self.chains).map( { String($0) }),
             "methods": Array(self.methods),
-            "events": Array(self.events)
+            "events": Array(self.events),
         ];
     }
 }

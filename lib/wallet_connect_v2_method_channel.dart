@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'src/model/app_metadata.dart';
 import 'src/model/connection_status.dart';
+import 'src/model/log_data.dart';
 import 'src/model/proposal_namespace.dart';
 import 'src/model/session.dart';
 import 'src/model/session_approval.dart';
@@ -79,8 +80,12 @@ class MethodChannelWalletConnectV2 extends WalletConnectV2Platform {
   Future<void> connectSession(
       {required String topic,
       required Map<String, ProposalNamespace> requiredNamespaces}) {
+    // convert the ProposalNamespace objects into string maps so that
+    // invokeMethod() can accept it below
+    final requiredNamespacesPlain =
+        requiredNamespaces.map((key, value) => MapEntry(key, value.toJson()));
     return methodChannel.invokeMethod('connectSession',
-        {'topic': topic, requiredNamespaces: jsonEncode(requiredNamespaces)});
+        {'topic': topic, 'requiredNamespaces': requiredNamespacesPlain});
   }
 
   @override
@@ -139,6 +144,8 @@ class MethodChannelWalletConnectV2 extends WalletConnectV2Platform {
           return SessionUpdate.fromJson(eventData);
         case "session_delete":
           return SessionDelete.fromJson(eventData);
+        case "log":
+          return LogData.fromJson(eventData);
         default:
           break;
       }

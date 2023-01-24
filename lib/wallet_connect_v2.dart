@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'src/model/app_metadata.dart';
 import 'src/model/connection_status.dart';
+import 'src/model/log_data.dart';
 import 'src/model/proposal_namespace.dart';
 import 'src/model/session.dart';
 import 'src/model/session_approval.dart';
@@ -16,6 +17,7 @@ import 'src/model/walletconnect_uri.dart';
 import 'wallet_connect_v2_platform_interface.dart';
 
 export 'src/model/app_metadata.dart';
+export 'src/model/log_data.dart';
 export 'src/model/proposal_namespace.dart';
 export 'src/model/session.dart';
 export 'src/model/session_approval.dart';
@@ -36,6 +38,7 @@ class WalletConnectV2 {
   OnSessionRequest? onSessionRequest;
   OnSessionResponse? onSessionResponse;
   OnEventError? onEventError;
+  OnLogData? onLogData;
 
   Future<void> init(
       {required String projectId, required AppMetadata appMetadata}) {
@@ -55,6 +58,8 @@ class WalletConnectV2 {
         onSessionUpdate?.call(event.topic);
       } else if (event is SessionDelete) {
         onSessionDelete?.call(event.topic);
+      } else if (event is LogData) {
+        onLogData?.call(event.message);
       }
     }, onError: (error) {
       if (error is PlatformException) {
@@ -111,6 +116,10 @@ class WalletConnectV2 {
         .updateSession(updateApproval: updateApproval);
   }
 
+  Future<void> sendRequest({required SessionRequest request}) {
+    return WalletConnectV2Platform.instance.sendRequest(request: request);
+  }
+
   Future<void> approveRequest(
       {required String topic,
       required String requestId,
@@ -139,3 +148,4 @@ typedef OnSessionDelete = Function(String topic);
 typedef OnSessionRequest = Function(SessionRequest request);
 typedef OnSessionResponse = Function(SessionResponse response);
 typedef OnEventError = Function(String code, String message);
+typedef OnLogData = Function(String message);
