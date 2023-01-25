@@ -10,8 +10,8 @@ SessionResponse _$SessionResponseFromJson(Map<String, dynamic> json) =>
     SessionResponse(
       id: json['id'] as String,
       topic: json['topic'] as String,
-      chainId: json['chainId'] as String,
-      result: json['result'] as String,
+      chainId: json['chainId'] as String?,
+      result: json['result'],
     );
 
 Map<String, dynamic> _$SessionResponseToJson(SessionResponse instance) =>

@@ -8,21 +8,17 @@ part 'session_response.g.dart';
 class SessionResponse {
   final String id;
   final String topic;
-  final String chainId;
-  final String result;
+  final String? chainId;
+  final dynamic result;
 
   SessionResponse(
       {required this.id,
       required this.topic,
-      required this.chainId,
+      this.chainId,
       required this.result});
 
   factory SessionResponse.fromJson(Map<String, dynamic> json) =>
       _$SessionResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$SessionResponseToJson(this);
-
-  static List<dynamic> fromParamsJson(String json) {
-    return jsonDecode(json) as List;
-  }
 }

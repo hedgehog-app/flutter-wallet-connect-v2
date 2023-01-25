@@ -252,7 +252,20 @@ public class SwiftWalletConnectV2Plugin: NSObject, FlutterPlugin, FlutterStreamH
         case "sendRequest": do {
             Task {
                 do {
-                    self.onEvent(name: "log", data: ["message": "SEND REQUEST NOT IMPLEMENTED YET"])
+                    let arguments = call.arguments as! [String: Any]
+                    let topic = arguments["topic"] as! String
+                    let method = arguments["method"] as! String
+                    let chainId = arguments["chainId"] as! String
+                    let params = arguments["params"] as! [[String: String]]
+                    let request: Request = Request(
+                        topic: topic,
+                        method: method,
+                        params: AnyCodable(params),
+                        chainId: Blockchain(chainId)!
+                    )
+                    self.onEvent(name: "log", data: ["message": "Sending request"])
+                    try await Sign.instance.request(params: request)
+                    self.onEvent(name: "log", data: ["message": "Request sent"])
                 } catch let error {
                     onError(code: "send_request_error", errorMessage: error.localizedDescription)
                 }
@@ -399,7 +412,7 @@ extension Response {
             "id": try! self.id.json(),
             "topic": self.topic,
             "chainId": self.chainId,
-            "result": self.result,
+            "result": try! self.result.json(),
         ];
     }
 }
