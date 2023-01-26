@@ -65,7 +65,7 @@ class WalletConnectV2 {
       if (error is PlatformException) {
         onEventError?.call(error.code, error.message ?? "Internal error");
       } else {
-        onEventError?.call('general_error', "Internal error");
+        onEventError?.call('general_error', error.toString());
       }
     });
     return WalletConnectV2Platform.instance
